@@ -130,7 +130,11 @@ defmodule RIFF do
       encode(sub_chunk)
     else
       %{ data: data } = sub_chunk
-      << id :: binary, size :: unsigned-little-size(32), data :: binary >>
+      if Integer.is_even(byte_size(data)) do
+        << id :: binary, size :: unsigned-little-size(32), data :: binary >>
+      else
+        << id :: binary, size :: unsigned-little-size(32), data :: binary, 0 :: size(8) >>
+      end
     end
   end
 end
