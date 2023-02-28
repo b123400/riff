@@ -116,6 +116,9 @@ defmodule RIFF do
     %{parsed | sub_chunks: List.replace_at(parsed.sub_chunks, index, new_sub_chunk)}
   end
 
+  @doc """
+    Encode a Chunk into binary. You can pass `:auto` to chunk's size and it will be automatically filled with the actual data size.
+  """
   @spec encode(chunk_with_sub_chunks()) :: binary()
   def encode(parsed) do
     %{ id: id, size: size, format: format, sub_chunks: sub_chunks } = parsed
