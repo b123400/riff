@@ -40,13 +40,13 @@ defmodule RIFF do
 
   @type simple_chunk() :: %RIFF.Chunk{
     id: binary(),
-    size: integer(),
+    size: integer() | :auto,
     data: binary(),
   }
 
   @type chunk_with_sub_chunks() :: %RIFF.ChunkWithSubChunks{
     id: binary(),
-    size: integer(),
+    size: integer() | :auto,
     format: binary(),
     sub_chunks: list(chunk()),
   }
@@ -120,7 +120,16 @@ defmodule RIFF do
   def encode(parsed) do
     %{ id: id, size: size, format: format, sub_chunks: sub_chunks } = parsed
     rest_binary = Enum.reduce(sub_chunks, <<>>, fn x, acc -> acc <> encode_sub_chunk(x) end)
-    <<id :: binary, size :: unsigned-little-size(32), format :: binary, rest_binary :: binary>>
+    actual_size = byte_size(rest_binary)
+    output_size = if size == :auto do
+      actual_size
+    else
+      if size != actual_size do
+        IO.warn("RIFF Data size (#{size}) does not match actual size (#{actual_size})")
+      end
+      size
+    end
+    <<id :: binary, output_size :: unsigned-little-size(32), format :: binary, rest_binary :: binary>>
   end
 
   @spec encode_sub_chunk(chunk()) :: binary()
@@ -130,10 +139,19 @@ defmodule RIFF do
       encode(sub_chunk)
     else
       %{ data: data } = sub_chunk
-      if Integer.is_even(byte_size(data)) do
-        << id :: binary, size :: unsigned-little-size(32), data :: binary >>
+      actual_size = byte_size(data)
+      output_size = if size == :auto do
+        actual_size
       else
-        << id :: binary, size :: unsigned-little-size(32), data :: binary, 0 :: size(8) >>
+        if size != actual_size do
+          IO.warn("RIFF Data size (#{size}) does not match actual size (#{actual_size})")
+        end
+        size
+      end
+      if Integer.is_even(actual_size) do
+        << id :: binary, output_size :: unsigned-little-size(32), data :: binary >>
+      else
+        << id :: binary, output_size :: unsigned-little-size(32), data :: binary, 0 :: size(8) >>
       end
     end
   end
